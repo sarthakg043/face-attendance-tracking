@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Student Management{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-3xl font-bold">Students</h1>
+  <div class="flex gap-3">
+    <a href="/admin/enroll" class="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition text-sm">+ Enroll New</a>
+    <a href="/admin/dashboard" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition text-sm">← Dashboard</a>
+  </div>
+</div>
+
+<!-- Search -->
+<div class="mb-6">
+  <input type="text" id="searchInput" placeholder="Search by name or roll number…"
+    class="w-full max-w-md px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
+</div>
+
+{% if persons %}
+<div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm" id="studentsTable">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left font-medium text-gray-500">ID</th>
+          <th class="px-6 py-3 text-left font-medium text-gray-500">Roll No</th>
+          <th class="px-6 py-3 text-left font-medium text-gray-500">Name</th>
+          <th class="px-6 py-3 text-left font-medium text-gray-500">Department</th>
+          <th class="px-6 py-3 text-left font-medium text-gray-500">Photos</th>
+          <th class="px-6 py-3 text-left font-medium text-gray-500">Status</th>
+          <th class="px-6 py-3 text-left font-medium text-gray-500">Enrolled</th>
+          <th class="px-6 py-3 text-left font-medium text-gray-500">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for p in persons %}
+        <tr class="hover:bg-gray-50 student-row" data-search="{{ p.roll_no|lower }} {{ p.name|lower }}">
+          <td class="px-6 py-3 text-gray-400">{{ p.id }}</td>
+          <td class="px-6 py-3 font-mono font-medium">{{ p.roll_no }}</td>
+          <td class="px-6 py-3 font-medium">{{ p.name }}</td>
+          <td class="px-6 py-3">{{ p.department }}</td>
+          <td class="px-6 py-3">{{ p.embedding|length }}</td>
+          <td class="px-6 py-3">
+            {% if p.active %}
+              <span class="px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs font-semibold">Active</span>
+            {% else %}
+              <span class="px-2 py-1 bg-red-100 text-red-700 rounded-md text-xs font-semibold">Inactive</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-3 text-gray-500">{{ p.enrolled_at[:10] }}</td>
+          <td class="px-6 py-3">
+            <a href="/admin/students/{{ p.roll_no }}" class="text-primary-600 hover:text-primary-800 font-medium">View →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="text-center py-16 bg-white rounded-xl border border-gray-100">
+  <p class="text-gray-400 text-lg">No students enrolled yet.</p>
+  <a href="/admin/enroll" class="inline-block mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700">Enroll First Student</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('searchInput').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.student-row').forEach(row => {
+    row.style.display = row.dataset.search.includes(q) ? '' : 'none';
+  });
+});
+</script>
+{% endblock %}

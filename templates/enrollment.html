@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+{% block title %}Student Enrollment{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <h1 class="text-3xl font-bold mb-2">Student Enrollment</h1>
+  <p class="text-gray-500 mb-8">Register a new student by filling in details and completing the face capture process.</p>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Left: form -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-semibold mb-4">Student Details</h2>
+      <form id="enrollForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Roll Number</label>
+          <input type="text" id="roll_no" required placeholder="e.g. CS2024001"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+          <input type="text" id="name" required placeholder="e.g. John Doe"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+          <input type="text" id="department" required placeholder="e.g. Computer Science"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
+        </div>
+
+        <!-- Upload option -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Or upload photos (optional)</label>
+          <input type="file" id="fileUpload" accept="image/*" multiple
+            class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700 file:font-medium hover:file:bg-primary-100">
+          <p class="text-xs text-gray-400 mt-1">Select 3-12 photos. You can also use the webcam capture below.</p>
+        </div>
+      </form>
+    </div>
+
+    <!-- Right: webcam capture -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-semibold mb-4">Face Capture</h2>
+
+      <!-- Video feed -->
+      <div class="relative bg-black rounded-xl overflow-hidden aspect-[4/3] mb-4">
+        <video id="webcam" autoplay playsinline muted class="w-full h-full object-cover"></video>
+        <canvas id="captureCanvas" class="hidden"></canvas>
+        <!-- Direction overlay -->
+        <div id="directionOverlay" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div id="directionText" class="bg-black/60 text-white text-lg font-semibold px-6 py-3 rounded-xl hidden"></div>
+        </div>
+        <!-- Progress ring -->
+        <div id="captureProgress" class="absolute top-3 right-3 hidden">
+          <div class="bg-black/60 text-white text-sm font-mono px-3 py-1 rounded-full">
+            <span id="captureCount">0</span>/12
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="flex gap-3 mb-4">
+        <button id="btnStartCapture" onclick="startCapture()"
+          class="flex-1 bg-green-600 text-white py-2.5 rounded-lg font-medium hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+          Start Face Capture
+        </button>
+        <button id="btnStopCapture" onclick="stopCapture()" class="hidden px-4 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition">
+          Stop
+        </button>
+      </div>
+
+      <!-- Captured thumbnails -->
+      <div id="thumbnails" class="grid grid-cols-6 gap-2 mb-4"></div>
+
+      <!-- Submit -->
+      <button id="btnSubmit" onclick="submitEnrollment()" disabled
+        class="w-full bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+        Enroll Student
+      </button>
+
+      <!-- Progress overlay -->
+      <div id="progressOverlay" class="hidden mt-4">
+        <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+          <div class="flex items-center gap-3 mb-3">
+            <svg class="animate-spin h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            <span id="progressLabel" class="text-sm font-medium text-gray-700">Uploading photos…</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+            <div id="progressBar" class="bg-primary-600 h-2.5 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+          </div>
+          <p id="progressDetail" class="text-xs text-gray-400 mt-2 text-center">Preparing…</p>
+        </div>
+      </div>
+
+      <p id="statusMsg" class="text-center text-sm mt-3 text-gray-500"></p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const DIRECTIONS = [
+  { text: "Look straight at the camera", ms: 2000 },
+  { text: "Slowly turn your head LEFT", ms: 2200 },
+  { text: "Back to center", ms: 1500 },
+  { text: "Slowly turn your head RIGHT", ms: 2200 },
+  { text: "Back to center", ms: 1500 },
+  { text: "Tilt your head UP slightly", ms: 2000 },
+  { text: "Back to center", ms: 1500 },
+  { text: "Tilt your head DOWN slightly", ms: 2000 },
+  { text: "Turn LEFT and tilt UP", ms: 2000 },
+  { text: "Turn RIGHT and tilt UP", ms: 2000 },
+  { text: "Smile and look straight", ms: 2000 },
+  { text: "Neutral face, straight ahead", ms: 2000 },
+];
+
+let stream = null;
+let capturedPhotos = [];
+let capturing = false;
+
+const video = document.getElementById('webcam');
+const canvas = document.getElementById('captureCanvas');
+const ctx = canvas.getContext('2d');
+
+// Start webcam on page load
+async function initWebcam() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
+    video.srcObject = stream;
+  } catch (e) {
+    showToast('Camera access denied. You can still upload photos.', 'warning');
+  }
+}
+initWebcam();
+
+function captureFrame() {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0);
+  return canvas.toDataURL('image/jpeg', 0.92);
+}
+
+function addThumbnail(dataUrl, index) {
+  const div = document.getElementById('thumbnails');
+  const img = document.createElement('img');
+  img.src = dataUrl;
+  img.className = 'w-full aspect-square object-cover rounded-lg border-2 border-green-400';
+  img.title = `Photo ${index + 1}`;
+  div.appendChild(img);
+}
+
+async function startCapture() {
+  if (!stream) { showToast('Camera not available', 'error'); return; }
+  capturedPhotos = [];
+  document.getElementById('thumbnails').innerHTML = '';
+  document.getElementById('captureProgress').classList.remove('hidden');
+  document.getElementById('btnStartCapture').disabled = true;
+  document.getElementById('btnStopCapture').classList.remove('hidden');
+  document.getElementById('btnSubmit').disabled = true;
+  capturing = true;
+
+  const dirText = document.getElementById('directionText');
+  dirText.classList.remove('hidden');
+
+  for (let i = 0; i < DIRECTIONS.length && capturing; i++) {
+    const dir = DIRECTIONS[i];
+    dirText.textContent = dir.text;
+    await sleep(dir.ms);
+    if (!capturing) break;
+    const frame = captureFrame();
+    capturedPhotos.push(frame);
+    addThumbnail(frame, i);
+    document.getElementById('captureCount').textContent = capturedPhotos.length;
+  }
+
+  finishCapture();
+}
+
+function stopCapture() {
+  capturing = false;
+  finishCapture();
+}
+
+function finishCapture() {
+  capturing = false;
+  document.getElementById('directionText').classList.add('hidden');
+  document.getElementById('btnStartCapture').disabled = false;
+  document.getElementById('btnStopCapture').classList.add('hidden');
+  updateSubmitButton();
+}
+
+// Handle file upload
+document.getElementById('fileUpload').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files);
+  for (const file of files.slice(0, 12 - capturedPhotos.length)) {
+    const dataUrl = await fileToDataUrl(file);
+    capturedPhotos.push(dataUrl);
+    addThumbnail(dataUrl, capturedPhotos.length - 1);
+  }
+  document.getElementById('captureCount').textContent = capturedPhotos.length;
+  document.getElementById('captureProgress').classList.remove('hidden');
+  updateSubmitButton();
+});
+
+function fileToDataUrl(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+function updateSubmitButton() {
+  const roll = document.getElementById('roll_no').value.trim();
+  const name = document.getElementById('name').value.trim();
+  const dept = document.getElementById('department').value.trim();
+  document.getElementById('btnSubmit').disabled = !(roll && name && dept && capturedPhotos.length >= 3);
+}
+
+// Re-check on input
+['roll_no', 'name', 'department'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateSubmitButton);
+});
+
+function showProgress(show) {
+  document.getElementById('progressOverlay').classList.toggle('hidden', !show);
+  document.getElementById('btnSubmit').classList.toggle('hidden', show);
+}
+
+function setProgress(pct, label, detail) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  if (label) document.getElementById('progressLabel').textContent = label;
+  if (detail) document.getElementById('progressDetail').textContent = detail;
+}
+
+async function submitEnrollment() {
+  const btn = document.getElementById('btnSubmit');
+  const msg = document.getElementById('statusMsg');
+  btn.disabled = true;
+  msg.textContent = '';
+  showProgress(true);
+  setProgress(5, 'Uploading photos…', `Sending ${capturedPhotos.length} photos to server`);
+
+  // Simulate progress while waiting for server
+  let pct = 5;
+  const tick = setInterval(() => {
+    if (pct < 85) {
+      pct += Math.random() * 8 + 2;
+      pct = Math.min(pct, 85);
+      const step = Math.floor((pct / 85) * capturedPhotos.length);
+      setProgress(Math.round(pct), 'Processing embeddings…', `Analyzing face ${Math.min(step + 1, capturedPhotos.length)} of ${capturedPhotos.length}`);
+    }
+  }, 800);
+
+  try {
+    const res = await fetch('/enroll/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        roll_no: document.getElementById('roll_no').value.trim(),
+        name: document.getElementById('name').value.trim(),
+        department: document.getElementById('department').value.trim(),
+        photos: capturedPhotos,
+      }),
+    });
+    clearInterval(tick);
+    const data = await res.json();
+    if (data.success) {
+      setProgress(100, 'Enrollment complete!', `${data.photos_used} photos processed successfully`);
+      showToast(`${data.name} enrolled (${data.photos_used} photos)`, 'success');
+      await sleep(1200);
+      showProgress(false);
+      // Reset form
+      document.getElementById('enrollForm').reset();
+      capturedPhotos = [];
+      document.getElementById('thumbnails').innerHTML = '';
+      document.getElementById('captureCount').textContent = '0';
+      msg.textContent = `Enrolled successfully! ${data.photos_used} photos used.`;
+      msg.className = 'text-center text-sm mt-3 text-green-600 font-semibold';
+    } else {
+      showProgress(false);
+      msg.textContent = data.error;
+      msg.className = 'text-center text-sm mt-3 text-red-600';
+      showToast(data.error, 'error');
+      btn.disabled = false;
+    }
+  } catch (e) {
+    clearInterval(tick);
+    showProgress(false);
+    msg.textContent = 'Network error. Please try again.';
+    msg.className = 'text-center text-sm mt-3 text-red-600';
+    btn.disabled = false;
+  }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+{% endblock %}

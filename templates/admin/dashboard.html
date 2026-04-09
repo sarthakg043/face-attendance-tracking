@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-3xl font-bold">Dashboard</h1>
+    <p class="text-gray-500">{{ today }}</p>
+  </div>
+  <div class="flex gap-3">
+    <a href="/admin/enroll" class="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition text-sm">+ Enroll Student</a>
+    <a href="/admin/logout" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition text-sm">Logout</a>
+  </div>
+</div>
+
+<!-- Stats cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+  <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+    <p class="text-sm text-gray-500 mb-1">Total Enrolled</p>
+    <p class="text-3xl font-bold text-gray-900">{{ persons|length }}</p>
+  </div>
+  <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+    <p class="text-sm text-gray-500 mb-1">Active Students</p>
+    <p class="text-3xl font-bold text-green-600">{{ persons|selectattr('active')|list|length }}</p>
+  </div>
+  <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+    <p class="text-sm text-gray-500 mb-1">Present Today</p>
+    <p class="text-3xl font-bold text-blue-600">{{ summary.total_present }}</p>
+  </div>
+  <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+    <p class="text-sm text-gray-500 mb-1">Completed (In+Out)</p>
+    <p class="text-3xl font-bold text-purple-600">{{ summary.total_complete }}</p>
+  </div>
+</div>
+
+<!-- Quick links -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+  <a href="/admin/students" class="flex items-center gap-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-5 border-2 border-blue-200 shadow-sm hover:shadow-lg hover:border-blue-400 hover:scale-[1.02] transition-all cursor-pointer group">
+    <div class="w-12 h-12 rounded-lg bg-blue-500 text-white flex items-center justify-center flex-shrink-0 group-hover:bg-blue-600 transition">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+    </div>
+    <div>
+      <h3 class="font-bold text-gray-900 group-hover:text-blue-700 transition">Student Management</h3>
+      <p class="text-gray-500 text-sm">View, edit, activate/deactivate, delete</p>
+    </div>
+    <svg class="w-5 h-5 ml-auto text-gray-300 group-hover:text-blue-500 transition flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+  </a>
+  <a href="/admin/reports" class="flex items-center gap-4 bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl p-5 border-2 border-amber-200 shadow-sm hover:shadow-lg hover:border-amber-400 hover:scale-[1.02] transition-all cursor-pointer group">
+    <div class="w-12 h-12 rounded-lg bg-amber-500 text-white flex items-center justify-center flex-shrink-0 group-hover:bg-amber-600 transition">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    </div>
+    <div>
+      <h3 class="font-bold text-gray-900 group-hover:text-amber-700 transition">Attendance Reports</h3>
+      <p class="text-gray-500 text-sm">Daily summaries, export CSV/PDF</p>
+    </div>
+    <svg class="w-5 h-5 ml-auto text-gray-300 group-hover:text-amber-500 transition flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+  </a>
+  <a href="/admin/enroll" class="flex items-center gap-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-5 border-2 border-green-200 shadow-sm hover:shadow-lg hover:border-green-400 hover:scale-[1.02] transition-all cursor-pointer group">
+    <div class="w-12 h-12 rounded-lg bg-green-500 text-white flex items-center justify-center flex-shrink-0 group-hover:bg-green-600 transition">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+    </div>
+    <div>
+      <h3 class="font-bold text-gray-900 group-hover:text-green-700 transition">Enroll Student</h3>
+      <p class="text-gray-500 text-sm">Register new student with face capture</p>
+    </div>
+    <svg class="w-5 h-5 ml-auto text-gray-300 group-hover:text-green-500 transition flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+  </a>
+</div>
+
+<!-- Today's attendance -->
+{% if summary.persons %}
+<div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-100">
+    <h3 class="font-semibold text-lg">Today's Attendance</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left font-medium text-gray-500">Roll No</th>
+          <th class="px-6 py-3 text-left font-medium text-gray-500">Name</th>
+          <th class="px-6 py-3 text-left font-medium text-gray-500">Check In</th>
+          <th class="px-6 py-3 text-left font-medium text-gray-500">Check Out</th>
+          <th class="px-6 py-3 text-left font-medium text-gray-500">Duration</th>
+          <th class="px-6 py-3 text-left font-medium text-gray-500">Status</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for s in summary.persons %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-3 font-mono">{{ s.roll_no }}</td>
+          <td class="px-6 py-3 font-medium">{{ s.name }}</td>
+          <td class="px-6 py-3">{{ s.check_in[11:19] if s.check_in else '—' }}</td>
+          <td class="px-6 py-3">{{ s.check_out[11:19] if s.check_out else '—' }}</td>
+          <td class="px-6 py-3">{{ '%0.1f min'|format(s.duration_min) if s.duration_min else '—' }}</td>
+          <td class="px-6 py-3">
+            {% if s.status == 'complete' %}
+              <span class="px-2 py-1 bg-green-100 text-green-700 rounded-md text-xs font-semibold">Complete</span>
+            {% elif s.status == 'checked_in' %}
+              <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-semibold">Checked In</span>
+            {% else %}
+              <span class="px-2 py-1 bg-gray-100 text-gray-500 rounded-md text-xs font-semibold">Absent</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
