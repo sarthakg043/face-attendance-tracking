@@ -97,7 +97,15 @@ async def mark_attendance(request: Request):
             "match_score": score,
         })
     except ValueError as e:
-        return JSONResponse({"success": False, "error": str(e)}, 422)
+        err_msg = str(e)
+        if "Face could not be detected" in err_msg:
+            return JSONResponse({
+                "success": False,
+                "error": "No face detected in the photo. Please ensure your face is clearly visible, well-lit, and centered in the frame.",
+            }, 422)
+        return JSONResponse({"success": False, "error": "Could not process the photo. Please try again."}, 422)
+    except Exception:
+        return JSONResponse({"success": False, "error": "Something went wrong. Please try again."}, 500)
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)

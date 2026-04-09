@@ -81,6 +81,25 @@
       </div>
 
       <p id="statusMsg" class="text-center text-sm mt-3 text-gray-500"></p>
+
+      <!-- Error detail panel -->
+      <div id="errorPanel" class="hidden mt-4">
+        <div class="bg-red-50 border border-red-200 rounded-xl p-5">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <div class="flex-1">
+              <h3 id="errorTitle" class="text-sm font-semibold text-red-800 mb-1">Enrollment Failed</h3>
+              <p id="errorSummary" class="text-sm text-red-700 mb-2"></p>
+              <div id="errorDetails" class="hidden">
+                <ul id="errorList" class="text-xs text-red-600 space-y-1 mt-2 list-disc list-inside"></ul>
+              </div>
+            </div>
+            <button onclick="document.getElementById('errorPanel').classList.add('hidden')" class="text-red-400 hover:text-red-600">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -218,15 +237,39 @@ async function submitEnrollment() {
       setTimeout(() => { window.location.href = '/admin/dashboard'; }, 1500);
     } else {
       showProgress(false);
-      msg.textContent = data.error; msg.className = 'text-center text-sm mt-3 text-red-600';
-      showToast(data.error, 'error');
+      showEnrollmentError(data);
       btn.disabled = false;
     }
   } catch {
     clearInterval(tick);
     showProgress(false);
-    msg.textContent = 'Network error.'; msg.className = 'text-center text-sm mt-3 text-red-600';
+    showEnrollmentError({ error: 'Network error. Please check your connection and try again.' });
     btn.disabled = false;
+  }
+}
+
+function showEnrollmentError(data) {
+  const panel = document.getElementById('errorPanel');
+  const summary = document.getElementById('errorSummary');
+  const details = document.getElementById('errorDetails');
+  const list = document.getElementById('errorList');
+  const msg = document.getElementById('statusMsg');
+
+  msg.textContent = '';
+  panel.classList.remove('hidden');
+  summary.textContent = data.error || 'An unknown error occurred.';
+  showToast(data.error || 'Enrollment failed', 'error');
+
+  if (data.failed_photos && data.failed_photos.length > 0) {
+    list.innerHTML = '';
+    data.failed_photos.forEach(fp => {
+      const li = document.createElement('li');
+      li.textContent = `Photo ${fp.photo}: ${fp.reason}`;
+      list.appendChild(li);
+    });
+    details.classList.remove('hidden');
+  } else {
+    details.classList.add('hidden');
   }
 }
 </script>

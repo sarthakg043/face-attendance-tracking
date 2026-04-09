@@ -58,16 +58,35 @@ async def enrollment_submit(request: Request):
             emb = extract_embedding(tmp_path)
             embeddings.append(emb)
         except Exception as e:
-            errors.append(f"Photo {i+1}: {e}")
+            err_msg = str(e)
+            if "Face could not be detected" in err_msg:
+                errors.append({"photo": i + 1, "reason": "No face detected"})
+            elif "base64" in err_msg.lower() or "decode" in err_msg.lower():
+                errors.append({"photo": i + 1, "reason": "Invalid image data"})
+            else:
+                errors.append({"photo": i + 1, "reason": "Processing failed"})
 
     if len(embeddings) < 3:
         # Cleanup temp files
         for p in saved_paths:
             if os.path.exists(p):
                 os.remove(p)
+
+        # Build a user-friendly summary
+        no_face_count = sum(1 for e in errors if e["reason"] == "No face detected")
+        if no_face_count == len(errors):
+            summary = "No faces could be detected in the uploaded photos. Please ensure you are capturing clear, well-lit photos of a human face."
+        elif no_face_count > 0:
+            summary = f"{no_face_count} of {len(photos)} photos had no detectable face. At least 3 clear face photos are required."
+        else:
+            summary = f"Only {len(embeddings)} of {len(photos)} photos were usable. At least 3 are required."
+
         return JSONResponse({
             "success": False,
-            "error": f"Only {len(embeddings)} usable photos (need ≥3). Issues: {'; '.join(errors)}",
+            "error": summary,
+            "failed_photos": errors,
+            "usable": len(embeddings),
+            "required": 3,
         }, 422)
 
     # Persist first photo as the enrolled photo
